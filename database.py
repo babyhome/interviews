@@ -1,5 +1,5 @@
 
-import os, sys
+import os.path, sys
 import sqlite3
 from sqlite3 import Error
 from flask import Flask
@@ -17,21 +17,50 @@ def create_conn(db_file):
 	return conn
 
 
-def create_user(conn, user):
+def create_user(conn, first_name = '', last_name = '', email = '', gender = '', age = 0):
 	# insert user with user data
-	id 		= ''' SELECT count(id) FROM users'''
-	sql 	= ''' INSERT INTO users(id, first_name, last_name, email, gender, age) VALUES(?,?,?,?,?,?)'''
 	cur 	= conn.cursor()
+	# get id
+	cur.execute(" SELECT count(id) FROM users ")
+	user_id 		= cur.fetchone()[0]
+
+	sql 	= ''' INSERT INTO users(id, first_name, last_name, email, gender, age) VALUES(?,?,?,?,?,?)'''
+
+	user 	= (user_id, first_name, last_name, email, gender, age)
+
+	conn.cursor()
 	cur.execute(sql, user)
 	return cur.lastrowid
 
 
-def update_user(conn, data):
+def update_user(conn, id, first_name = '', last_name = '', email = '', gender = '', age = 0):
 	# update user with user data
-	cur 	= conn.cursor()
-	cur.execute( "DELETE FROM users WHERE id = ?", (data, ) )
-	conn.commit()
+	sql 	= ''' UPDATE users 
+					SET 
+						first_name = ?,
+						last_name = ?,
+						email = ?,
+						gender = ?,
+						age = ?
+					WHERE id = ?
+						'''
+	user 	= (first_name, last_name, email, gender, age, id)
 
+	cur 	= conn.cursor()
+	cur.execute(sql, user)
+	conn.commit()
+	cur.close()
+
+
+
+def delete_user(conn, id):
+	# delete user with user id
+	sql 	= ''' DELETE FROM users WHERE id = ? '''
+
+	cur 	= conn.cursor()
+	cur.execute(sql, ( id, ))
+	conn.commit()
+	cur.close()
 
 
 
@@ -81,12 +110,12 @@ def select_user_by_email(conn, email):
 def select_user_by_ages(conn, start, end = -1):
 	# get user by first_name
 	cur 	= conn.cursor()
-	if end == -1 :
-		sql = ' SELECT id, first_name, last_name, email, gender, age FROM users WHERE age = ? '
+	if end < 0 :
+		sql = " SELECT id, first_name, last_name, email, gender, age FROM users WHERE age = ? "
 		cur.execute( sql, ( start, ) )
 		rows 	= cur.fetchall()
 	else:
-		sql = ' SELECT id, first_name, last_name, email, gender, age FROM users WHERE age BETWEEN ? = ? '
+		sql = " SELECT id, first_name, last_name, email, gender, age FROM users WHERE age BETWEEN ? AND ? "
 		cur.execute( sql, ( start, end, ) )
 		rows 	= cur.fetchall()
 	# cur.execute( sql, ( start, end, ) )
@@ -109,7 +138,10 @@ def select_user_by_gender(conn, gender):
 # ============================================
 # == main
 def main():
-	conn = create_conn( "user.db" )
+
+	dir 	= os.path.dirname( os.path.abspath(__file__))
+	db_path = os.path.join( dir, "user.db" )
+	conn = create_conn( db_path )
 	with conn:
 		# print("2. Query by id")
 		# id 	= 10
@@ -119,9 +151,18 @@ def main():
 		# email = 'delhamr2@technorati.com'
 		# select_user_by_email( conn, email )
 
-		print("3. Query by age")
-		age 	= 12
-		select_user_by_ages( conn, age )
+		# print("3. Query by age")
+		# age 	= 15
+		# end 	= 18
+		# select_user_by_ages( conn, age, 18 )
+
+		# print("4. Insert user")
+		# create_user(conn, first_name = 'beerz', last_name = 'srzn', email = 'beerz@mail.com', gender = 'female', age = 30)
+
+		# update_user(conn, id = 1000, first_name = 'beerz', last_name = 'srzn', email = 'beerz@mail.com', gender = 'female', age = 27)
+
+		# select_user_by_email( conn, "beerz@mail.com" )
+		delete_user(conn, 1000)
 
 
 
